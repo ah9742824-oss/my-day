@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>منظم الأسبوع - مودرن</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#f3f7fb;
+      --card:#ffffff;
+      --muted:#6b7280;
+      --accent:#2563eb;
+      --glass: rgba(255,255,255,0.6);
+      --success:#10b981;
+      --danger:#ef4444;
+      --border:#e6edf3;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;font-family:"Cairo",sans-serif;background:linear-gradient(180deg,#f7fbff 0%,var(--bg) 100%);
+      color:#0b1220;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+    }
+
+    header.app-header{
+      display:flex;align-items:center;justify-content:space-between;padding:16px 20px;
+      gap:12px;background:transparent;
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:46px;height:46px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#7dd3fc);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:18px;box-shadow:0 6px 18px rgba(37,99,235,0.15)
+    }
+    h1{margin:0;font-size:20px}
+    .header-actions{display:flex;gap:8px;align-items:center}
+
+    .container{max-width:1200px;margin:8px auto;padding:12px}
+    .top-controls{display:flex;gap:8px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .btn{
+      background:var(--card);border:1px solid var(--border);padding:8px 12px;border-radius:10px;cursor:pointer;
+      box-shadow:0 4px 10px rgba(2,6,23,0.04);
+    }
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#7dd3fc);color:white;border:none}
+    .btn.ghost{background:transparent;border:1px dashed var(--border);}
+
+    /* week grid */
+    .week-wrap{background:transparent;border-radius:12px;padding:12px}
+    .grid{
+      display:grid;
+      grid-template-columns:80px repeat(7,1fr);
+      gap:8px;
+      align-items:start;
+    }
+    .time-col{display:flex;flex-direction:column;gap:8px}
+    .time-slot{
+      height:56px;background:transparent;border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-weight:600;font-size:13px
+    }
+    .day-col{display:flex;flex-direction:column;gap:8px}
+    .day-header{background:var(--card);padding:8px;border-radius:10px;border:1px solid var(--border);text-align:center;font-weight:700}
+    .stack{display:flex;flex-direction:column;gap:8px}
+
+    .block{
+      background:var(--card);border:1px solid var(--border);padding:10px;border-radius:10px;min-height:48px;cursor:pointer;position:relative;overflow:hidden;
+      transition:transform .12s, box-shadow .12s;
+    }
+    .block:hover{transform:translateY(-4px);box-shadow:0 10px 30px rgba(2,6,23,0.06)}
+    .block .time{position:absolute;left:8px;top:8px;font-size:11px;color:var(--muted)}
+    .block .title{font-weight:700;text-align:right}
+    .block .note{display:block;color:#334155;margin-top:8px;font-size:13px}
+    .block.empty{opacity:0.6;color:var(--muted);font-weight:600;text-align:center}
+
+    /* type colors */
+    .block[data-type="university"]{border-left:6px solid #f59e0b}
+    .block[data-type="exercise"]{border-left:6px solid #2563eb}
+    .block[data-type="study"]{border-left:6px solid #10b981}
+    .block[data-type="food"]{border-left:6px solid #ef4444}
+    .block[data-type="other"]{border-left:6px solid #9ca3af}
+
+    /* modal */
+    .modal{position:fixed;inset:0;background:rgba(2,6,23,0.45);display:flex;align-items:center;justify-content:center;padding:20px;z-index:80}
+    .modal-card{width:520px;background:var(--card);padding:16px;border-radius:12px;border:1px solid var(--border);box-shadow:0 8px 30px rgba(2,6,23,0.08)}
+    .modal h3{margin:0 0 8px 0}
+    label{display:block;margin-top:8px;font-weight:700;font-size:14px}
+    input[type="text"], input[type="time"], input[type="number"], textarea, select{
+      width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);margin-top:6px;
+    }
+    textarea{resize:vertical;min-height:70px}
+    .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    .danger{background:var(--danger);color:white;border:none}
+    .save{background:var(--accent);color:white;border:none}
+
+    /* day view */
+    .day-header-row{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .tabs{display:flex;gap:8px;flex-wrap:wrap}
+    .tab{padding:8px 12px;border-radius:10px;background:var(--card);border:1px solid var(--border);cursor:pointer}
+    .tab.active{background:linear-gradient(90deg,var(--accent),#7dd3fc);color:white;border:none}
+    .tab-content{background:var(--card);border:1px solid var(--border);padding:12px;border-radius:12px}
+
+    .exercise-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;border:1px solid #eef3fb;margin-bottom:8px}
+    .exercise-item .meta{flex:1}
+    .exercise-item .meta b{display:block}
+    .exercise-item small{display:block;color:var(--muted);margin-top:6px}
+    .exercise-actions{display:flex;gap:6px;align-items:center}
+
+    .flex{display:flex;gap:8px;align-items:center}
+    .muted{color:var(--muted)}
+
+    footer.app-footer{padding:12px;text-align:center;color:var(--muted);margin-top:12px}
+
+    /* responsive */
+    @media (max-width:980px){ .grid{grid-template-columns:60px repeat(7,1fr)} .modal-card{width:92%} .time-slot{height:48px} }
+    @media (max-width:700px){ .grid{grid-template-columns:50px repeat(7,1fr);overflow:auto} .time-slot{height:42px} }
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="logo">A</div>
+      <div>
+        <h1>يومي</h1>
+      </div>
+    </div>
+
+    <div class="header-actions">
+      <button id="exportAllJson" class="btn">تنزيل كل البيانات (JSON)</button>
+      <button id="clearAll" class="btn">مسح البيانات</button>
+      <button id="openToday" class="btn primary">افتح يوم اليوم</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="top-controls">
+      <div class="muted">انقر على أي خانة لإضافة حدث أو تعديل. الجدول يبدأ 01:00 ويمتد 24 ساعة.</div>
+      <div class="flex">
+        <select id="viewDay" class="btn">
+          <option value="">عرض يوم (افتح صفحة اليوم)</option>
+        </select>
+        <button id="gotoDay" class="btn">فتح</button>
+      </div>
+    </div>
+
+    <section class="week-wrap">
+      <div class="grid" id="weekGrid">
+        <!-- JS يبني الجدول -->
+      </div>
+    </section>
+
+    <hr style="margin:18px 0;border:none;border-top:1px solid var(--border)">
+
+    <!-- Day detail area (tabs) -->
+    <section id="dayView" style="display:none">
+      <div class="day-header-row">
+        <div>
+          <h2 id="dayTitle">تفاصيل اليوم</h2>
+          <div class="muted" id="daySubtitle">تفاصيل + خطة التمرين</div>
+        </div>
+        <div class="flex">
+          <button id="backToWeek" class="btn">العودة للأسبوع</button>
+          <button id="downloadPdf" class="btn primary">تنزيل PDF لليوم</button>
+        </div>
+      </div>
+
+      <div class="tabs" id="tabs">
+        <div class="tab active" data-tab="workout">🏋️️ التمارين</div>
+        <div class="tab" data-tab="food">🍽 الغذاء</div>
+        <div class="tab" data-tab="university">🎓 الجامعة</div>
+        <div class="tab" data-tab="tasks">📋 المهام</div>
+        <div class="tab" data-tab="notes">📝 ملاحظات</div>
+      </div>
+
+      <div style="margin-top:12px">
+        <div id="tabContent" class="tab-content">
+          <!-- محتوى التبويب يتغير بواسطة جافاسكربت -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="app-footer">
+Designed & Developed by : Ahmed Hany Sayed Ahmed Abdel Wahab 
+&copy; 2025
+</footer>
+
+  <!-- Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+  <script>
+  (function(){
+    // -------- config ----------
+    const DAYS = ['السبت','الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس','الجمعة'];
+    const storageKey = 'weeklyPlanner_v4';
+    // grid from 01:00 for 24 hours
+    const startHour = 1;
+    const hoursCount = 24;
+    const stepMinutes = 15; // time picker step (allow minutes)
+    // initial workout plans (from your message)
+    const presetWorkouts = {
+      'السبت': {
+         title: 'صدر + بطن',
+        duration: '40–45 دقيقة',
+        items: [
+          {title:'Push-ups', sets:'4 × 15', time:'5 دقائق', url:'https://www.youtube.com/watch?v=IODxDxX7oi4'},
+          {title:'Incline Push-ups', sets:'3 × 12', time:'4 دقائق', url:'https://www.youtube.com/watch?v=cfns5VDVVvk'},
+          {title:'Dumbbell Chest Press', sets:'3 × 15', time:'5 دقائق', url:'https://www.youtube.com/watch?v=VmB1G1K7v94'},
+          {title:'Crunches + Leg raises + Plank', sets:'', time:'15 دقيقة', url:'https://www.youtube.com/watch?v=0t4t3IpiEao'},
+        ],
+        note:'راحة وتنقلات: 5–10 دقائق'
+      },
+      'الأحد': {
+        title: 'ظهر + باي',
+        duration:'40–45 دقيقة',
+        items:[
+          {title:'Pull-ups', sets:'3 × أقصى عدد', time:'6 دقائق', url:'https://www.youtube.com/watch?v=aNUSgyWRJYA'},
+          {title:'Dumbbell Rows', sets:'3 × 12', time:'5 دقائق', url:'https://www.youtube.com/watch?v=roCP6wCXPqo'},
+          {title:'Bicep curls', sets:'3 × 15', time:'5 دقائق', url:'https://www.youtube.com/watch?v=ykJmrZ5v0Oo'},
+          {title:'Concentration curl', sets:'3 × 12', time:'5 دقائق', url:'https://www.youtube.com/watch?v=Jvj2wV0vOYU'},
+        ],
+        note:'إحماء وراحة: 10–15 دقيقة'
+      },
+      'الاثنين': {
+        title:'رجل + كتف', duration:'45 دقيقة تقريبًا',
+        items:[
+          {title:'Squats + Goblet Squat', sets:'4 × 20', time:'8 دقائق', url:'https://www.youtube.com/watch?v=YaXPRqUwItQ'},
+          {title:'Lunges + Calf Raises', sets:'3 × 15', time:'8 دقائق', url:'https://www.youtube.com/watch?v=wrwwXE_x-pQ'},
+          {title:'Dumbbell Shoulder Press + Lateral Raises', sets:'3 × 15', time:'10 دقائق', url:'https://www.youtube.com/watch?v=qEwKCR5JCog'},
+        ],
+        note:'بطن خفيف أو تمدد بسيط (5 دقائق) - راحة وتنقلات: 10–15 دقيقة'
+      },
+      'الثلاثاء': {
+        title:'كارديو + بطن', duration:'30–35 دقيقة',
+        items:[
+          {title:'Jumping jacks', sets:'4 × 1 دقيقة', time:'5 دقائق', url:'https://www.youtube.com/watch?v=iSSAk4XCsRA'},
+          {title:'High knees', sets:'3 × 30 ثانية', time:'3 دقائق', url:'https://www.youtube.com/watch?v=lR3cpCVBjPM'},
+          {title:'Burpees', sets:'3 × 10', time:'5 دقائق', url:'https://www.youtube.com/watch?v=qLBImHhCXSw'},
+          {title:'Bicycle crunches + Flutter kicks + Plank', sets:'', time:'15 دقيقة', url:'https://www.youtube.com/watch?v=wpRI3xBhJmo'},
+        ],
+        note:'راحة بسيطة: 5 دقائق'
+      },
+      'الأربعاء': {
+        title:'عقلة + ظهر', duration:'35–40 دقيقة',
+        items:[
+          {title:'Pull-ups', sets:'', time:'5 دقائق', url:'https://www.youtube.com/watch?v=aNUSgyWRJYA'},
+          {title:'Negative pull-ups', sets:'', time:'5 دقائق', url:'https://www.youtube.com/watch?v=gbPURTSxQLY'},
+          {title:'Rows (وزن خفيف)', sets:'', time:'8 دقائق', url:'https://www.youtube.com/watch?v=roCP6wCXPqo'},
+          {title:'Superman Hold', sets:'3 × 30ث', time:'5 دقائق', url:'https://www.youtube.com/watch?v=z6PJMT2y8GQ'},
+        ],
+        note:'إحماء وراحة: 10–15 دقيقة'
+      },
+      'الخميس': {
+        title:'جسم كامل', duration:'35–40 دقيقة',
+        items:[
+          {title:'Push-ups', sets:'3 × 15', time:'5 دقائق', url:'https://www.youtube.com/watch?v=IODxDxX7oi4'},
+          {title:'Squats', sets:'4 × 20', time:'8 دقائق', url:'https://www.youtube.com/watch?v=YaXPRqUwItQ'},
+          {title:'Pull-ups', sets:'3 × 5–10', time:'5 دقائق', url:'https://www.youtube.com/watch?v=aNUSgyWRJYA'},
+          {title:'Dumbbell Press', sets:'3 × 15', time:'5 دقائق', url:'https://www.youtube.com/watch?v=VmB1G1K7v94'},
+        ],
+        note:'Plank: 3 × 1 دقيقة (6 دقائق) - راحة بين الجولات: 10–15 دقيقة'
+      },
+      'الجمعة': {
+        title:'راحة / إطالة', duration:'وقت حر',
+        items:[
+          {title:'استرخاء وتمدد', sets:'', time:'20-30 دقيقة', url:''}
+        ],
+        note:'يوم راحة — جلسة تمدد خفيفة أو مشي'
+      }
+    };
+
+    // default food plan
+    const defaultFood = [
+      {meal:'الفطور', content:'2 بيض + خبز بلدي + خيار / طماطم'},
+      {meal:'سناك 1', content:'ثمرة موز أو تفاحة'},
+      {meal:'الغداء', content:'عدس أو فول + بيضة + أرز أو خبز بلدي'},
+      {meal:'سناك 2', content:'علبة زبادي أو بيضة'},
+      {meal:'العشاء', content:'جبنة قريش أو بيضة + خبز + خيار'}
+    ];
+
+    // ---------- helpers ----------
+    function loadData(){ try{ return JSON.parse(localStorage.getItem(storageKey) || '{}'); }catch(e){ return {}; } }
+    function saveData(d){ localStorage.setItem(storageKey, JSON.stringify(d)); }
+    function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,8); }
+
+    // Format hour: "01:00"
+    function pad(v){ return v.toString().padStart(2,'0'); }
+    function fmtHour(h,min=0){ return pad(h) + ':' + pad(min); }
+
+    // build week grid DOM
+    const grid = document.getElementById('weekGrid');
+    const viewDaySelect = document.getElementById('viewDay');
+
+    function buildWeek(){
+      grid.innerHTML = '';
+      // time col header
+      const timeColTop = document.createElement('div'); timeColTop.className='time-col';
+      const emptyTop = document.createElement('div'); emptyTop.style.height='56px'; timeColTop.appendChild(emptyTop);
+      for(let i=0;i<hoursCount;i++){
+        const hour = (startHour + i) % 24;
+        const label = document.createElement('div');
+        label.className='time-slot';
+        const ampm = hour<12? 'ص' : 'م';
+        const hh=((hour+11)%12 +1);
+        label.textContent = pad(hh) + ':00 ' + ampm;
+        timeColTop.appendChild(label);
+      }
+      grid.appendChild(timeColTop);
+
+      // days
+      DAYS.forEach(day=>{
+        const col = document.createElement('div'); col.className='day-col';
+        const header = document.createElement('div'); header.className='day-header';
+        header.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center"><div>${day}</div><div style="font-size:12px" class="muted">${presetWorkouts[day]?.title||''}</div></div>`;
+        col.appendChild(header);
+
+        const stack = document.createElement('div'); stack.className='stack';
+
+        for(let i=0;i<hoursCount;i++){
+          const hour = (startHour + i) % 24;
+          const block = document.createElement('div'); block.className='block empty';
+          block.dataset.day = day; block.dataset.time = fmtHour(hour,0);
+          block.innerHTML = `<span class="time">${fmtHour(hour,0)}</span><span class="title">اضغط لإضافة حدث</span>`;
+          // load saved event if exists for that exact hour slot (we support minute-level but for grid show top-of-hour)
+          const data = loadData();
+          const events = data.events || {};
+          // find any event that overlaps this time for this day
+          const found = Object.values(events).find(ev=>{
+            return ev.day===day && timeOverlap(ev.start, ev.end, fmtHour(hour,0));
+          });
+          if(found){
+            block.classList.remove('empty');
+            block.dataset.type = found.type || 'other';
+            block.querySelector('.title').textContent = found.title || 'حدث';
+            if(found.note){
+              const n = document.createElement('span'); n.className='note'; n.textContent = found.note; block.appendChild(n);
+            }
+            // small duration label
+            const dur = document.createElement('span'); dur.style.position='absolute'; dur.style.right='8px'; dur.style.top='8px'; dur.style.fontSize='11px'; dur.style.color='var(--muted)';
+            dur.textContent = found.start + (found.end? ' - '+found.end : '');
+            block.appendChild(dur);
+          }
+
+          block.addEventListener('click', ()=>openEventModal(day, fmtHour(hour,0)));
+          stack.appendChild(block);
+        }
+
+        col.appendChild(stack);
+        grid.appendChild(col);
+      });
+
+      // populate day select
+      viewDaySelect.innerHTML = '<option value="">اختر يوم</option>';
+      DAYS.forEach(d=>{ const opt=document.createElement('option'); opt.value=d; opt.textContent=d; viewDaySelect.appendChild(opt); });
+    }
+
+    // time overlap check (if time t0 lies between start and end (inclusive start, exclusive end))
+    function timeToMinutes(t){ const [hh,mm]=t.split(':').map(Number); return hh*60+mm; }
+    function timeOverlap(start,end, check){
+      const s=timeToMinutes(start); const e=timeToMinutes(end||start);
+      const c=timeToMinutes(check);
+      // if end<start assume same day but we handle always within 24h; treat inclusive start exclusive end
+      return (c >= s && c < e);
+    }
+
+    // open add/edit modal
+    function openEventModal(day, defaultTime){
+      const data = loadData();
+      const events = data.events || {};
+
+      // create modal
+      const modal = document.createElement('div'); modal.className='modal';
+      const card = document.createElement('div'); card.className='modal-card';
+      card.innerHTML = `
+        <h3>إضافة / تعديل حدث</h3>
+        <label>اليوم</label>
+        <input type="text" id="m_day" readonly value="${day}">
+        <div class="row" style="display:flex;gap:8px;margin-top:8px">
+          <div style="flex:1">
+            <label>بداية</label>
+            <input id="m_start" type="time" step="${stepMinutes*60}" value="${defaultTime}">
+          </div>
+          <div style="flex:1">
+            <label>نهاية</label>
+            <input id="m_end" type="time" step="${stepMinutes*60}" value="${defaultTime}">
+          </div>
+        </div>
+        <label>عنوان الحدث</label>
+        <input id="m_title" type="text" placeholder="مثال: محاضرة، تمرين ...">
+        <label>نوع</label>
+        <select id="m_type">
+          <option value="">عام</option>
+          <option value="university">جامعة</option>
+          <option value="exercise">تمرين</option>
+          <option value="study">مذاكرة</option>
+          <option value="food">غذاء</option>
+          <option value="other">أخرى</option>
+        </select>
+        <label>ملاحظات / رابط</label>
+        <textarea id="m_note" placeholder="مثل رابط اليوتيوب أو تفاصيل"></textarea>
+        <div class="actions">
+          <button id="delEvt" class="btn danger">حذف</button>
+          <button id="saveEvt" class="btn save">حفظ</button>
+        </div>
+      `;
+      modal.appendChild(card);
+      document.body.appendChild(modal);
+
+      // When saving: create event id and store
+      card.querySelector('#saveEvt').addEventListener('click', ()=>{
+        const start = card.querySelector('#m_start').value;
+        const end = card.querySelector('#m_end').value || start;
+        const title = card.querySelector('#m_title').value.trim();
+        const type = card.querySelector('#m_type').value || 'other';
+        const note = card.querySelector('#m_note').value.trim();
+        if(!title){ alert('اكتب عنوان الحدث'); return; }
+        // create event id
+        const id = uid();
+        events[id] = {id, day, start, end, title, type, note};
+        data.events = events;
+        saveData(data);
+        document.body.removeChild(modal);
+        buildWeek();
+      });
+
+      card.querySelector('#delEvt').addEventListener('click', ()=>{
+        // find any event overlapping and delete (simple behavior: delete the first found)
+        const s = card.querySelector('#m_start').value;
+        const foundId = Object.keys(events).find(k => events[k].day===day && events[k].start===s);
+        if(foundId){
+          if(!confirm('حذف الحدث؟')) return;
+          delete events[foundId];
+          data.events = events; saveData(data);
+        }
+        document.body.removeChild(modal); buildWeek();
+      });
+
+      modal.addEventListener('click', (e)=>{ if(e.target===modal) document.body.removeChild(modal); });
+    }
+
+    // --------- Day view (tabs + content) ----------
+    const dayView = document.getElementById('dayView');
+    const dayTitle = document.getElementById('dayTitle');
+    const daySubtitle = document.getElementById('daySubtitle');
+    const tabs = document.getElementById('tabs');
+    const tabContent = document.getElementById('tabContent');
+    let currentDay = null;
+
+    // open day
+    function openDay(day){
+      currentDay = day;
+      document.getElementById('viewDay').value = day;
+      dayTitle.textContent = `تفاصيل - ${day}`;
+      daySubtitle.textContent = presetWorkouts[day]?.title || '';
+      dayView.style.display = 'block';
+      // hide week
+      window.scrollTo({top:0,behavior:'smooth'});
+      renderTab('workout');
+      // set active tab UI
+      Array.from(tabs.querySelectorAll('.tab')).forEach(t=> t.classList.toggle('active', t.dataset.tab==='workout'));
+      document.getElementById('weekGrid').scrollIntoView({behavior:'smooth'});
+      // hide week visually (we keep it but scroll)
+      document.querySelector('.week-wrap').style.display = 'none';
+    }
+
+    document.getElementById('gotoDay').addEventListener('click', ()=>{
+      const d = document.getElementById('viewDay').value;
+      if(d) openDay(d);
+    });
+    document.getElementById('backToWeek').addEventListener('click', ()=>{
+      dayView.style.display = 'none';
+      document.querySelector('.week-wrap').style.display = '';
+      currentDay = null;
+    });
+    document.getElementById('openToday').addEventListener('click', ()=>{
+      const today = new Date();
+      const dayIndex = (today.getDay()+6) % 7; // convert Sunday=0 to Arabic mapping starting Saturday
+      openDay(DAYS[dayIndex]);
+    });
+
+    tabs.addEventListener('click', (e)=>{
+      const t = e.target.closest('.tab');
+      if(!t) return;
+      Array.from(tabs.querySelectorAll('.tab')).forEach(x=>x.classList.remove('active'));
+      t.classList.add('active');
+      renderTab(t.dataset.tab);
+    });
+
+    function renderTab(tab){
+      if(!currentDay) return;
+      tabContent.innerHTML = '';
+      if(tab==='workout'){
+        renderWorkoutTab();
+      } else if(tab==='food'){
+        renderFoodTab();
+      } else if(tab==='university'){
+        renderUniversityTab();
+      } else if(tab==='tasks'){
+        renderTasksTab();
+      } else if(tab==='notes'){
+        renderNotesTab();
+      }
+    }
+
+    // -------- Workout tab ----------
+    function renderWorkoutTab(){
+      const d = loadData();
+      const dayKey = currentDay;
+      // get saved custom workouts if any
+      const saved = d.workouts && d.workouts[dayKey] ? d.workouts[dayKey] : null;
+      const plan = saved || presetWorkouts[dayKey] || {title:'تمارين', items:[], note:''};
+
+      const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between'; header.style.alignItems='center';
+      const left = document.createElement('div'); left.innerHTML = `<h3 style="margin:0">${plan.title || 'خطة التمرين'}</h3><div class="muted">${plan.duration || ''}</div>`;
+      const right = document.createElement('div');
+      right.innerHTML = `<button id="addExercise" class="btn">أضف تمرين</button> <button id="saveWorkout" class="btn primary">حفظ الخطة</button>`;
+      header.appendChild(right); header.insertBefore(left, right);
+      tabContent.appendChild(header);
+
+      if(plan.note){
+        const p = document.createElement('div'); p.className='muted'; p.style.marginTop='8px'; p.textContent = plan.note; tabContent.appendChild(p);
+      }
+
+      const list = document.createElement('div'); list.style.marginTop='12px';
+      tabContent.appendChild(list);
+
+      function renderList(){
+        list.innerHTML = '';
+        (plan.items || []).forEach((ex, idx)=>{
+          const it = document.createElement('div'); it.className='exercise-item';
+          const cb = document.createElement('input'); cb.type='checkbox'; cb.style.transform='scale(1.2)';
+          // checked state from saved progress
+          const progress = d.progress || {};
+          const checked = progress[dayKey] && progress[dayKey][ex.title];
+          cb.checked = !!checked;
+
+          cb.addEventListener('change', ()=>{
+            const p = loadData();
+            p.progress = p.progress || {};
+            p.progress[dayKey] = p.progress[dayKey] || {};
+            p.progress[dayKey][ex.title] = cb.checked;
+            saveData(p);
+          });
+
+          const meta = document.createElement('div'); meta.className='meta';
+          const title = document.createElement('b'); title.textContent = ex.title + (ex.sets? (' — '+ex.sets) : '');
+          const small = document.createElement('small'); small.className='muted';
+          small.innerHTML = `${ex.time || ''} ${ex.url? (' — <a href="'+ex.url+'" target="_blank">فيديو</a>') : ''}`;
+          meta.appendChild(title); meta.appendChild(small);
+
+          const actions = document.createElement('div'); actions.className='exercise-actions';
+          const editBtn = document.createElement('button'); editBtn.className='btn'; editBtn.textContent='تعديل';
+          const delBtn = document.createElement('button'); delBtn.className='btn'; delBtn.textContent='حذف';
+          actions.appendChild(editBtn); actions.appendChild(delBtn);
+
+          editBtn.addEventListener('click', ()=>openEditExercise(idx));
+          delBtn.addEventListener('click', ()=>{
+            if(confirm('حذف التمرين؟')){
+              plan.items.splice(idx,1);
+              // also remove progress
+              const p = loadData(); if(p.progress && p.progress[dayKey]) delete p.progress[dayKey][ex.title]; saveData(p);
+              renderList();
+            }
+          });
+
+          it.appendChild(cb); it.appendChild(meta); it.appendChild(actions);
+          list.appendChild(it);
+        });
+      }
+      renderList();
+
+      document.getElementById('addExercise').addEventListener('click', ()=>{
+        // insert a new editable row
+        openExerciseEditor(null);
+      });
+
+      document.getElementById('saveWorkout').addEventListener('click', ()=>{
+        const p = loadData();
+        p.workouts = p.workouts || {};
+        p.workouts[dayKey] = plan;
+        saveData(p);
+        alert('تم حفظ خطة التمرين لهذا اليوم.');
+      });
+
+      // open editor for existing index
+      function openEditExercise(idx){
+        openExerciseEditor(idx);
+      }
+
+      function openExerciseEditor(idx){
+        // modal card
+        const modal = document.createElement('div'); modal.className='modal';
+        const card = document.createElement('div'); card.className='modal-card';
+        card.innerHTML = `<h3>${idx===null? 'إضافة تمرين' : 'تعديل التمرين'}</h3>
+          <label>اسم التمرين</label><input id="ex_title" type="text" value="${idx!==null ? (plan.items[idx].title || '') : ''}">
+          <label>الجولات / الوصف</label><input id="ex_sets" type="text" value="${idx!==null ? (plan.items[idx].sets || '') : ''}">
+          <label>التقدير الزمني</label><input id="ex_time" type="text" value="${idx!==null ? (plan.items[idx].time || '') : ''}">
+          <label>رابط الفيديو (يوتيوب)</label><input id="ex_url" type="text" value="${idx!==null ? (plan.items[idx].url || '') : ''}">
+          <div class="actions"><button id="cancelBtn" class="btn">إلغاء</button><button id="saveBtn" class="btn primary">حفظ</button></div>
+        `;
+        modal.appendChild(card); document.body.appendChild(modal);
+        card.querySelector('#cancelBtn').addEventListener('click', ()=>document.body.removeChild(modal));
+        card.querySelector('#saveBtn').addEventListener('click', ()=>{
+          const t = card.querySelector('#ex_title').value.trim();
+          if(!t){ alert('اكتب اسم التمرين'); return; }
+          const s = card.querySelector('#ex_sets').value.trim();
+          const ti = card.querySelector('#ex_time').value.trim();
+          const u = card.querySelector('#ex_url').value.trim();
+          if(idx===null){
+            plan.items.push({title:t, sets:s, time:ti, url:u});
+          } else {
+            plan.items[idx] = {title:t, sets:s, time:ti, url:u};
+          }
+          document.body.removeChild(modal);
+          renderList();
+        });
+        modal.addEventListener('click',(e)=>{ if(e.target===modal) document.body.removeChild(modal); });
+      }
+    }
+
+    // -------- Food tab ----------
+    function renderFoodTab(){
+      const d = loadData();
+      const dayKey = currentDay;
+      const saved = (d.food && d.food[dayKey]) ? d.food[dayKey] : defaultFood;
+      const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between';
+      header.innerHTML = `<div><h3 style="margin:0">جدول الغذاء</h3><div class="muted">خطة غذائية اقتصادية</div></div><div><button id="saveFood" class="btn primary">حفظ</button></div>`;
+      tabContent.appendChild(header);
+      const list = document.createElement('div'); list.style.marginTop='12px';
+      saved.forEach((m,idx)=>{
+        const row = document.createElement('div'); row.className='exercise-item';
+        const meal = document.createElement('div'); meal.style.flex='1';
+        meal.innerHTML = `<b>${m.meal}</b><small class="muted">${m.content}</small>`;
+        const edit = document.createElement('button'); edit.className='btn'; edit.textContent='تعديل';
+        edit.addEventListener('click', ()=> {
+          const nm = prompt('نص الوجبة:', m.content);
+          if(nm!==null){ m.content = nm; renderFoodTab(); }
+        });
+        row.appendChild(meal); row.appendChild(edit);
+        list.appendChild(row);
+      });
+      tabContent.appendChild(list);
+      document.getElementById('saveFood').addEventListener('click', ()=>{
+        const p = loadData(); p.food = p.food || {}; p.food[dayKey] = saved; saveData(p); alert('تم حفظ الغذاء');
+        renderTab('food');
+      });
+    }
+
+    // -------- University tab ----------
+    function renderUniversityTab(){
+      const d = loadData();
+      const dayKey = currentDay;
+      const items = (d.university && d.university[dayKey]) ? d.university[dayKey] : [];
+      const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between';
+      header.innerHTML = `<div><h3 style="margin:0">الجامعة / جدول المحاضرات</h3><div class="muted">أضف محاضرات اليوم مع الوقت</div></div><div><button id="addClass" class="btn">أضف محاضرة</button></div>`;
+      tabContent.appendChild(header);
+      const list = document.createElement('div'); list.style.marginTop='12px';
+      items.forEach((it,idx)=>{
+        const row = document.createElement('div'); row.className='exercise-item';
+        const meta = document.createElement('div'); meta.style.flex='1';
+        meta.innerHTML = `<b>${it.title}</b><small class="muted">${it.start} - ${it.end} ${it.location?(' — '+it.location):''}</small>`;
+        const del = document.createElement('button'); del.className='btn'; del.textContent='حذف';
+        del.addEventListener('click', ()=>{ if(confirm('حذف المحاضرة؟')){ items.splice(idx,1); const p=loadData(); p.university = p.university||{}; p.university[dayKey]=items; saveData(p); renderUniversityTab(); }});
+        row.appendChild(meta); row.appendChild(del);
+        list.appendChild(row);
+      });
+      tabContent.appendChild(list);
+
+      document.getElementById('addClass').addEventListener('click', ()=>{
+        const title = prompt('اسم المادة:'); if(!title) return;
+        const start = prompt('بداية (مثل 09:00):','09:00') || '';
+        const end = prompt('نهاية (مثل 10:30):','10:30') || '';
+        const loc = prompt('المكان (اختياري):','') || '';
+        items.push({title,start,end,location:loc});
+        const p = loadData(); p.university = p.university || {}; p.university[dayKey]=items; saveData(p);
+        renderUniversityTab();
+      });
+    }
+
+    // -------- Tasks tab ----------
+    function renderTasksTab(){
+      const d = loadData();
+      const dayKey = currentDay;
+      const items = (d.tasks && d.tasks[dayKey]) ? d.tasks[dayKey] : [];
+      const header = document.createElement('div'); header.style.display='flex'; header.style.justifyContent='space-between';
+      header.innerHTML = `<div><h3 style="margin:0">المهام</h3><div class="muted">أضف مهام اليوم وتعليم أنها انتهت</div></div><div><button id="addTask" class="btn">أضف مهمة</button></div>`;
+      tabContent.appendChild(header);
+      const list = document.createElement('div'); list.style.marginTop='12px';
+      items.forEach((t,idx)=>{
+        const row = document.createElement('div'); row.className='exercise-item';
+        const cb = document.createElement('input'); cb.type='checkbox'; cb.checked = !!t.done;
+        cb.addEventListener('change', ()=>{ t.done = cb.checked; const p = loadData(); p.tasks = p.tasks || {}; p.tasks[dayKey] = items; saveData(p); renderTasksTab(); });
+        const meta = document.createElement('div'); meta.style.flex='1'; meta.innerHTML = `<b>${t.title}</b><small class="muted">${t.time||''}</small>`;
+        const del = document.createElement('button'); del.className='btn'; del.textContent='حذف';
+        del.addEventListener('click', ()=>{ if(confirm('حذف المهمة؟')){ items.splice(idx,1); const p=loadData(); p.tasks = p.tasks || {}; p.tasks[dayKey]=items; saveData(p); renderTasksTab(); }});
+        row.appendChild(cb); row.appendChild(meta); row.appendChild(del);
+        list.appendChild(row);
+      });
+      tabContent.appendChild(list);
+      document.getElementById('addTask').addEventListener('click', ()=>{
+        const title = prompt('عنوان المهمة:'); if(!title) return;
+        const time = prompt('الوقت (اختياري مثل 14:30):','');
+        items.push({title,time,done:false});
+        const p = loadData(); p.tasks = p.tasks || {}; p.tasks[dayKey] = items; saveData(p);
+        renderTasksTab();
+      });
+    }
+
+    // -------- Notes tab ----------
+    function renderNotesTab(){
+      const d = loadData(); const dayKey = currentDay;
+      const note = (d.notes && d.notes[dayKey]) ? d.notes[dayKey] : '';
+      const ta = document.createElement('textarea'); ta.style.width='100%'; ta.style.minHeight='240px'; ta.value = note;
+      tabContent.appendChild(ta);
+      const save = document.createElement('div'); save.style.marginTop='8px'; save.innerHTML = '<button class="btn primary">حفظ الملاحظة</button>';
+      tabContent.appendChild(save);
+      save.querySelector('button').addEventListener('click', ()=>{ const p=loadData(); p.notes = p.notes || {}; p.notes[dayKey]=ta.value; saveData(p); alert('تم حفظ الملاحظة'); });
+    }
+
+    // -------- PDF export for current day ----------
+    document.getElementById('downloadPdf').addEventListener('click', async ()=>{
+      if(!currentDay) return alert('افتح يوم أولاً');
+      const node = document.getElementById('tabContent');
+      // clone to simplify layout
+      const clone = node.cloneNode(true);
+      clone.style.width = '800px';
+      clone.style.background = '#fff';
+      clone.style.padding = '20px';
+      document.body.appendChild(clone);
+      try{
+        const canvas = await html2canvas(clone, {scale:2});
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p','mm','a4');
+        const pageWidth = pdf.internal.pageSize.getWidth();
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pageWidth - 20;
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        pdf.addImage(imgData,'PNG',10,10,pdfWidth,pdfHeight);
+        pdf.save(`${currentDay}_plan.pdf`);
+      }catch(e){
+        alert('فشل إنشاء PDF: ' + e.message);
+      }
+      document.body.removeChild(clone);
+    });
+
+    // Export all JSON
+    document.getElementById('exportAllJson').addEventListener('click', ()=>{
+      const data = loadData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download = 'planner_data.json'; a.click(); URL.revokeObjectURL(url);
+    });
+
+    // clear all
+    document.getElementById('clearAll').addEventListener('click', ()=>{
+      if(confirm('مسح كل البيانات من المتصفح؟')){ localStorage.removeItem(storageKey); buildWeek(); alert('تم المسح'); }
+    });
+
+    // open day if url param
+    function tryOpenFromURL(){
+      const params = new URLSearchParams(location.search);
+      const day = params.get('day');
+      if(day && DAYS.includes(day)) openDay(day);
+    }
+
+    // init
+    buildWeek();
+    tryOpenFromURL();
+
+    // on clicking any existing event show details and option to edit more precisely
+    // (handled in modal when clicking block)
+  })();
+  </script>
+</body>
+</html>
